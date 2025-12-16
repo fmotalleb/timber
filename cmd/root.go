@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/fmotalleb/timber/config"
+	"github.com/fmotalleb/timber/server"
 )
 
 var debug = false
@@ -65,7 +66,8 @@ to quickly create a Cobra application.`,
 		if err = config.Parse(ctx, &cfg, configFile); err != nil {
 			return err
 		}
-		return nil
+		sCtx := server.NewContext(ctx, cfg)
+		return server.Serve(sCtx)
 	},
 }
 

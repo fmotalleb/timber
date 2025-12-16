@@ -15,7 +15,8 @@
             },
             "args": [
                 "-c",
-                "config.toml"
+                "config.toml",
+                "-d"
             ]
         }
     ]

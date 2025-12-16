@@ -1,10 +1,10 @@
 users = [
-  "user:pass@ac1",
+  "user:pass@ac1,ac2",
 ]
 
 [access]
 ac1 = "./"
 ac2 = [
   "/var/log",
-  "./",
+  "./test",
 ]

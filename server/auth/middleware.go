@@ -1,0 +1,62 @@
+package auth
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/fmotalleb/go-tools/log"
+
+	"github.com/fmotalleb/timber/config"
+)
+
+func WithBasicAuth(cfg config.Config) func(http.Handler) http.Handler {
+	// build user index once
+	users := make(map[string]config.User, len(cfg.Users))
+	for _, u := range cfg.Users {
+		users[u.Name] = u
+	}
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := log.Of(r.Context())
+			username, password, ok := r.BasicAuth()
+			if !ok {
+				logger.Warn("no auth found")
+				unauthorized(w)
+				return
+			}
+
+			u, ok := users[username]
+			if !ok || u.Password != password {
+				logger.Warn("authentication failed")
+				unauthorized(w)
+				return
+			}
+
+			// resolve access lists
+			var access []string
+			for _, name := range u.AccessList {
+				a, ok := cfg.Access[name]
+				if !ok {
+					continue
+				}
+				access = append(access, a.Paths...)
+			}
+
+			authUser := &AuthUser{
+				Name:   u.Name,
+				Access: access,
+			}
+
+			ctx := context.WithValue(r.Context(), ctxUserKey, authUser)
+			ctx = context.WithValue(ctx, ctxAccessKey, access)
+
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func unauthorized(w http.ResponseWriter) {
+	w.Header().Set("WWW-Authenticate", `Basic realm="logs"`)
+	http.Error(w, "unauthorized", http.StatusUnauthorized)
+}
