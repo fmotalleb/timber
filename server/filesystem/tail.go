@@ -35,7 +35,7 @@ func Tail(w http.ResponseWriter, r *http.Request) {
 
 	for _, l := range last {
 		if l != "" {
-			w.Write([]byte(l + "\n"))
+			w.Write([]byte(l))
 		}
 	}
 

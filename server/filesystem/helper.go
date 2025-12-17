@@ -67,33 +67,41 @@ func tailLines(f *os.File, n int) ([]string, error) {
 
 func followFile(w http.ResponseWriter, r *http.Request, f *os.File) {
 	h := w.Header()
-	h.Set("Content-Type", "text/octet-stream")
+	h.Set("Content-Type", "application/octet-stream")
 	h.Set("Cache-Control", "no-cache")
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
+
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		return
 	}
+	flusher.Flush()
 
 	reader := bufio.NewReader(f)
 	ctx := r.Context()
+	buf := make([]byte, 4096) // read chunks of 4KB
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
-		line, err := reader.ReadString('\n')
+
+		n, err := reader.Read(buf)
+		if n > 0 {
+			w.Write(buf[:n])
+			flusher.Flush()
+		}
+
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				time.Sleep(500 * time.Millisecond)
+				time.Sleep(200 * time.Millisecond)
 				continue
 			}
 			return
 		}
-		w.Write([]byte(line))
-		flusher.Flush()
 	}
 }
