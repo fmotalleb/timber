@@ -8,6 +8,7 @@ import (
 	"github.com/fmotalleb/go-tools/log"
 
 	"github.com/fmotalleb/timber/server/auth"
+	"github.com/fmotalleb/timber/server/filesystem"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -21,19 +22,41 @@ func Serve(ctx Context) error {
 	r := chi.NewRouter()
 	r.Use(
 		withLogger(ctx),
-		auth.WithBasicAuth(ctx.GetCfg()),
 	)
 	r.Mount("/static", http.FileServerFS(staticFS))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("welcome"))
 	})
-	r.Get("/me", func(w http.ResponseWriter, r *http.Request) {
-		user, ok := auth.UserFromContext(r.Context())
-		if !ok {
-			return
-		}
-		b, _ := json.Marshal(user)
-		w.Write(b)
+	// Authenticated routes
+	r.Group(func(r chi.Router) {
+		r.Use(
+			auth.WithBasicAuth(ctx.GetCfg()),
+			auth.PermissionCheck,
+		)
+		r.Get("/me", func(w http.ResponseWriter, r *http.Request) {
+			user, ok := auth.UserFromContext(r.Context())
+			if !ok {
+				return
+			}
+			b, _ := json.Marshal(user)
+			w.Write(b)
+		})
+		r.Get(
+			"/filesystem/ls",
+			filesystem.Ls,
+		)
+		r.Get(
+			"/filesystem/cat",
+			filesystem.Cat,
+		)
+		r.Get(
+			"/filesystem/head",
+			filesystem.Head,
+		)
+		r.Get(
+			"/filesystem/tail",
+			filesystem.Tail,
+		)
 	})
 
 	return http.ListenAndServe(ctx.GetCfg().Listen, r)

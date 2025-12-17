@@ -7,6 +7,7 @@ import (
 	"github.com/fmotalleb/go-tools/log"
 
 	"github.com/fmotalleb/timber/config"
+	"github.com/fmotalleb/timber/server/response"
 )
 
 func WithBasicAuth(cfg config.Config) func(http.Handler) http.Handler {
@@ -22,14 +23,14 @@ func WithBasicAuth(cfg config.Config) func(http.Handler) http.Handler {
 			username, password, ok := r.BasicAuth()
 			if !ok {
 				logger.Warn("no auth found")
-				unauthorized(w)
+				response.Unauthorized(w)
 				return
 			}
 
 			u, ok := users[username]
 			if !ok || u.Password != password {
 				logger.Warn("authentication failed")
-				unauthorized(w)
+				response.Unauthorized(w)
 				return
 			}
 
@@ -54,9 +55,4 @@ func WithBasicAuth(cfg config.Config) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-func unauthorized(w http.ResponseWriter) {
-	w.Header().Set("WWW-Authenticate", `Basic realm="logs"`)
-	http.Error(w, "unauthorized", http.StatusUnauthorized)
 }

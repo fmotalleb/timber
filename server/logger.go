@@ -23,13 +23,24 @@ func withLogger(ctx Context) func(http.Handler) http.Handler {
 					zap.String("uri", r.RequestURI),
 				)
 			defer func() {
-				l.Debug(
-					"request finished",
-					zap.Int("status", ww.Status()),
-					zap.Int("response_length", ww.BytesWritten()),
-					zap.Any("headers", ww.Header()),
-					zap.Duration("time", time.Since(t1)),
-				)
+				status := ww.Status()
+				if status >= 400 {
+					l.Warn(
+						"request finished with error",
+						zap.Int("status", status),
+						zap.Int("response_length", ww.BytesWritten()),
+						zap.Any("headers", ww.Header()),
+						zap.Duration("time", time.Since(t1)),
+					)
+				} else {
+					l.Debug(
+						"request finished",
+						zap.Int("status", status),
+						zap.Int("response_length", ww.BytesWritten()),
+						zap.Any("headers", ww.Header()),
+						zap.Duration("time", time.Since(t1)),
+					)
+				}
 			}()
 			newCtx := log.WithLogger(r.Context(), l)
 			next.ServeHTTP(ww, r.WithContext(newCtx))

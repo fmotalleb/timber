@@ -3,8 +3,8 @@ users = [
 ]
 
 [access]
-ac1 = "./"
+ac1 = "/home/motalleb/Documents/GitHub/timber/test.log"
 ac2 = [
-  "/var/log",
+  "/var/log/*.log",
   "./test",
 ]
