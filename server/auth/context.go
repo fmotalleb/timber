@@ -1,3 +1,4 @@
+// package auth contains guard logics and user middleware
 package auth
 
 import (

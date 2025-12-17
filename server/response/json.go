@@ -19,4 +19,3 @@ func JSON(w http.ResponseWriter, data any, status int) error {
 	_, err = w.Write(b)
 	return err
 }
-

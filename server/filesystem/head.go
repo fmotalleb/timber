@@ -24,7 +24,7 @@ func Head(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lines := getLinesParam(r, DefaultLineCount)
+	lines := getLinesParam(r, defaultLineCount)
 
 	f, err := os.Open(filePath)
 	if err != nil {

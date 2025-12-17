@@ -42,4 +42,3 @@ func (a *Access) Decode(from reflect.Type, val interface{}) (any, error) {
 		return val, nil
 	}
 }
-

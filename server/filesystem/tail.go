@@ -23,7 +23,7 @@ func Tail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lines := getLinesParam(r, DefaultLineCount)
+	lines := getLinesParam(r, defaultLineCount)
 	follow := getFollowParam(r)
 
 	f, err := os.Open(filePath)

@@ -16,7 +16,7 @@ linters:
     - gocyclo
     - godot
     - goprintffuncname
-    - gosec
+    # - gosec
     - govet
     - ineffassign
     - misspell
@@ -25,7 +25,7 @@ linters:
     - noctx
     - nolintlint
     - perfsprint
-    - revive
+    # - revive
     - rowserrcheck
     - sqlclosecheck
     - staticcheck

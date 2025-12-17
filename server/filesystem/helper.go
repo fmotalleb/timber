@@ -17,7 +17,7 @@ import (
 const (
 	readChunkSize          = 4096
 	followFilePollInterval = 200 * time.Millisecond
-	DefaultLineCount       = 10
+	defaultLineCount       = 10
 )
 
 func getLinesParam(r *http.Request, def int) int {

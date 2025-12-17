@@ -12,4 +12,3 @@ func GetPath(r *http.Request) (string, bool) {
 	reqPath := queries.Get("path")
 	return reqPath, true
 }
-

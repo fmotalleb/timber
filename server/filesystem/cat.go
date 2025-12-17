@@ -1,3 +1,4 @@
+// package filesystem contains fs logic
 package filesystem
 
 import (

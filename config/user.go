@@ -14,7 +14,7 @@ type User struct {
 }
 
 // Decode is a custom decoder for the User type to handle string format.
-// The format is <user>:<pass>@<access-1>,<access-2>
+// The format is <user>:<pass>@<access-1>,<access-2>.
 func (u *User) Decode(from reflect.Type, val interface{}) (any, error) {
 	if from.Kind() != reflect.String {
 		return val, nil
