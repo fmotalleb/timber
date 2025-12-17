@@ -1,3 +1,4 @@
 FROM scratch
-COPY seed /
-ENTRYPOINT ["/seed"]
+COPY timber /
+ENTRYPOINT ["/timber"]
+CMD ["--config=/config.toml"]
