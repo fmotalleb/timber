@@ -5,10 +5,14 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/fmotalleb/go-tools/log"
+	"go.uber.org/zap"
+
 	"github.com/fmotalleb/timber/server/helper"
 )
 
 func Head(w http.ResponseWriter, r *http.Request) {
+	logger := log.Of(r.Context())
 	filePath, ok := helper.GetPath(r)
 	if !ok {
 		http.Error(w, "missing `path` query parameter", http.StatusBadRequest)
@@ -28,7 +32,9 @@ func Head(w http.ResponseWriter, r *http.Request) {
 
 	sc := bufio.NewScanner(f)
 	for i := 0; i < lines && sc.Scan(); i++ {
-		w.Write(append(sc.Bytes(), '\n'))
+		if _, err := w.Write(append(sc.Bytes(), '\n')); err != nil {
+			logger.Error("failed to write response", zap.Error(err))
+		}
 	}
 
 	if err := sc.Err(); err != nil {

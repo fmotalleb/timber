@@ -12,7 +12,6 @@ type Access struct {
 
 func (a *Access) Decode(from reflect.Type, val interface{}) (any, error) {
 	switch from.Kind() {
-
 	case reflect.String:
 		raw := val.(string)
 		a.Paths = strings.Split(raw, ",")

@@ -10,12 +10,12 @@ import (
 )
 
 func withLogger(ctx Context) func(http.Handler) http.Handler {
-	parentLogger := log.Of(ctx).Named("Server")
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			t1 := time.Now()
-			l := parentLogger.
+			l := log.Of(r.Context()).
+				Named("Server").
 				Named("Request").
 				With(
 					zap.Time("started", t1),

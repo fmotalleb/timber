@@ -54,7 +54,8 @@ pre {
 <body>
 
 <!-- LOGIN -->
-<div id="login">
+<form action="/" onsubmit="login()">
+    <div id="login">
     <h3>Authenticate</h3>
     <input id="user" placeholder="username" />
     <input id="pass" type="password" placeholder="password" />
@@ -62,6 +63,7 @@ pre {
     <div id="login-error"></div>
 </div>
 
+</form>
 <!-- APP -->
 <div id="app" class="hidden">
     <h3>Filesystem ls</h3>
@@ -136,6 +138,7 @@ function logout() {
     AUTH_HEADER = null;
     document.getElementById("login").classList.remove("hidden");
     document.getElementById("app").classList.add("hidden");
+    [...filesContainer.children].forEach((a) => filesContainer.removeChild(a));
 }
 
 window.addEventListener("load", async () => {

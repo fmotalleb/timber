@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fmotalleb/go-tools/log"
+	"go.uber.org/zap"
 )
 
 func getLinesParam(r *http.Request, def int) int {
@@ -92,7 +95,9 @@ func followFile(w http.ResponseWriter, r *http.Request, f *os.File) {
 
 		n, err := reader.Read(buf)
 		if n > 0 {
-			w.Write(buf[:n])
+			if _, err := w.Write(buf[:n]); err != nil {
+				log.Of(r.Context()).Error("failed to write response", zap.Error(err))
+			}
 			flusher.Flush()
 		}
 

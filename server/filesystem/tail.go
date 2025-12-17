@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/fmotalleb/go-tools/log"
+	"go.uber.org/zap"
+
 	"github.com/fmotalleb/timber/server/helper"
 )
 
@@ -35,7 +38,9 @@ func Tail(w http.ResponseWriter, r *http.Request) {
 
 	for _, l := range last {
 		if l != "" {
-			w.Write([]byte(l))
+			if _, err := w.Write([]byte(l)); err != nil {
+				log.Of(r.Context()).Error("failed to write response", zap.Error(err))
+			}
 		}
 	}
 

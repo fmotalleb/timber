@@ -1,11 +1,16 @@
 package server
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
+	"io/fs"
+	"net"
 	"net/http"
+	"time"
 
 	"github.com/fmotalleb/go-tools/log"
+	"go.uber.org/zap"
 
 	"github.com/fmotalleb/timber/server/auth"
 	"github.com/fmotalleb/timber/server/filesystem"
@@ -23,10 +28,10 @@ func Serve(ctx Context) error {
 	r.Use(
 		withLogger(ctx),
 	)
-	r.Mount("/static", http.FileServerFS(staticFS))
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("welcome"))
-	})
+
+	// r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Write([]byte("welcome"))
+	// })
 	// Authenticated routes
 	r.Group(func(r chi.Router) {
 		r.Use(
@@ -39,7 +44,9 @@ func Serve(ctx Context) error {
 				return
 			}
 			b, _ := json.Marshal(user)
-			w.Write(b)
+			if _, err := w.Write(b); err != nil {
+				log.Of(r.Context()).Error("failed to write response", zap.Error(err))
+			}
 		})
 		r.Get(
 			"/filesystem/ls",
@@ -58,6 +65,18 @@ func Serve(ctx Context) error {
 			filesystem.Tail,
 		)
 	})
-
-	return http.ListenAndServe(ctx.GetCfg().Listen, r)
+	rootFs, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		return err
+	}
+	r.Mount("/", http.FileServerFS(rootFs))
+	server := &http.Server{
+		Addr:              ctx.GetCfg().Listen,
+		ReadHeaderTimeout: 3 * time.Second,
+		Handler:           r,
+		BaseContext: func(_ net.Listener) context.Context {
+			return ctx
+		},
+	}
+	return server.ListenAndServe()
 }

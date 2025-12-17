@@ -30,5 +30,7 @@ func Ls(w http.ResponseWriter, r *http.Request) {
 		}
 		files = append(files, matches...)
 	}
-	response.Json(w, files, http.StatusOK)
+	if err := response.Json(w, files, http.StatusOK); err != nil {
+		logger.Error("failed to write response", zap.Error(err))
+	}
 }
