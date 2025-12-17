@@ -11,14 +11,19 @@ import (
 	"github.com/fmotalleb/timber/server/helper"
 )
 
+// Tail returns the last n lines of a file.
 func Tail(w http.ResponseWriter, r *http.Request) {
 	filePath, ok := helper.GetPath(r)
 	if !ok {
 		http.Error(w, "missing `path` query parameter", http.StatusBadRequest)
 		return
 	}
+	if containsDotDot(filePath) {
+		http.Error(w, "invalid path", http.StatusBadRequest)
+		return
+	}
 
-	lines := getLinesParam(r, 10)
+	lines := getLinesParam(r, DefaultLineCount)
 	follow := getFollowParam(r)
 
 	f, err := os.Open(filePath)

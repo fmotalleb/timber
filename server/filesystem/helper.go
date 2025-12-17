@@ -14,6 +14,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	readChunkSize          = 4096
+	followFilePollInterval = 200 * time.Millisecond
+	DefaultLineCount       = 10
+)
+
 func getLinesParam(r *http.Request, def int) int {
 	v := r.URL.Query().Get("lines")
 	if v == "" {
@@ -25,13 +31,30 @@ func getLinesParam(r *http.Request, def int) int {
 	return def
 }
 
+func containsDotDot(v string) bool {
+	if !strings.Contains(v, "..") {
+		return false
+	}
+	for _, ent := range strings.Split(v, "/") {
+		if ent == ".." {
+			return true
+		}
+	}
+	for _, ent := range strings.Split(v, `\`) {
+		if ent == ".." {
+			return true
+		}
+	}
+	return false
+}
+
 func getFollowParam(r *http.Request) bool {
 	v := strings.ToLower(r.URL.Query().Get("follow"))
 	return v == "1" || v == "true" || v == "yes"
 }
 
 func tailLines(f *os.File, n int) ([]string, error) {
-	const blockSize = 4096
+	const blockSize = readChunkSize
 
 	stat, err := f.Stat()
 	if err != nil {
@@ -84,7 +107,7 @@ func followFile(w http.ResponseWriter, r *http.Request, f *os.File) {
 
 	reader := bufio.NewReader(f)
 	ctx := r.Context()
-	buf := make([]byte, 4096) // read chunks of 4KB
+	buf := make([]byte, readChunkSize) // read chunks of 4KB
 
 	for {
 		select {
@@ -95,15 +118,15 @@ func followFile(w http.ResponseWriter, r *http.Request, f *os.File) {
 
 		n, err := reader.Read(buf)
 		if n > 0 {
-			if _, err := w.Write(buf[:n]); err != nil {
-				log.Of(r.Context()).Error("failed to write response", zap.Error(err))
+			if _, writeErr := w.Write(buf[:n]); writeErr != nil {
+				log.Of(r.Context()).Error("failed to write response", zap.Error(writeErr))
 			}
 			flusher.Flush()
 		}
 
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				time.Sleep(200 * time.Millisecond)
+				time.Sleep(followFilePollInterval)
 				continue
 			}
 			return

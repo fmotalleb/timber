@@ -33,7 +33,7 @@ to quickly create a Cobra application.`,
 	},
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		var configFile string
 		var err error
 		var cfg config.Config

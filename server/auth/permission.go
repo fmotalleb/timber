@@ -12,8 +12,10 @@ import (
 	"github.com/fmotalleb/timber/server/response"
 )
 
+// ErrorPermissionDeny is returned when a user does not have permission to access a resource.
 var ErrorPermissionDeny = errors.New("permission denied")
 
+// PermissionCheck is a middleware that checks if a user has permission to access a resource.
 func PermissionCheck(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {

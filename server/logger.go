@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func withLogger(ctx Context) func(http.Handler) http.Handler {
+func withLogger(_ Context) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
@@ -24,7 +24,7 @@ func withLogger(ctx Context) func(http.Handler) http.Handler {
 				)
 			defer func() {
 				status := ww.Status()
-				if status >= 400 {
+				if status >= http.StatusBadRequest {
 					l.Warn(
 						"request finished with error",
 						zap.Int("status", status),

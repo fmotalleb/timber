@@ -1,3 +1,4 @@
+// Package config provides the configuration for the application.
 package config
 
 import (
@@ -6,10 +7,12 @@ import (
 	"strings"
 )
 
+// Access defines the files and directories that a user can access.
 type Access struct {
 	Paths []string `mapstructure:"path"`
 }
 
+// Decode is a custom decoder for the Access type to handle both string and slice of strings.
 func (a *Access) Decode(from reflect.Type, val interface{}) (any, error) {
 	switch from.Kind() {
 	case reflect.String:
@@ -39,3 +42,4 @@ func (a *Access) Decode(from reflect.Type, val interface{}) (any, error) {
 		return val, nil
 	}
 }
+

@@ -11,6 +11,7 @@ import (
 	"github.com/fmotalleb/timber/server/response"
 )
 
+// Ls returns a list of files that the user has access to.
 func Ls(w http.ResponseWriter, r *http.Request) {
 	access, ok := auth.AccessFromContext(r.Context())
 	if !ok {
@@ -30,7 +31,7 @@ func Ls(w http.ResponseWriter, r *http.Request) {
 		}
 		files = append(files, matches...)
 	}
-	if err := response.Json(w, files, http.StatusOK); err != nil {
+	if err := response.JSON(w, files, http.StatusOK); err != nil {
 		logger.Error("failed to write response", zap.Error(err))
 	}
 }

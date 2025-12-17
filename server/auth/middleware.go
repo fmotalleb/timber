@@ -10,6 +10,7 @@ import (
 	"github.com/fmotalleb/timber/server/response"
 )
 
+// WithBasicAuth is a middleware that provides basic authentication.
 func WithBasicAuth(cfg config.Config) func(http.Handler) http.Handler {
 	// build user index once
 	users := make(map[string]config.User, len(cfg.Users))

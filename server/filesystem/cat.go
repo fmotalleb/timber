@@ -6,6 +6,7 @@ import (
 	"github.com/fmotalleb/timber/server/helper"
 )
 
+// Cat serves a file to the client.
 func Cat(w http.ResponseWriter, r *http.Request) {
 	filePath, ok := helper.GetPath(r)
 	if !ok {

@@ -21,6 +21,9 @@ import (
 //go:embed static/*
 var staticFS embed.FS
 
+const readHeaderTimeout = 3 * time.Second
+
+// Serve starts the HTTP server.
 func Serve(ctx Context) error {
 	l := log.Of(ctx).Named("Serve")
 	l.Info("starting server")
@@ -72,7 +75,7 @@ func Serve(ctx Context) error {
 	r.Mount("/", http.FileServerFS(rootFs))
 	server := &http.Server{
 		Addr:              ctx.GetCfg().Listen,
-		ReadHeaderTimeout: 3 * time.Second,
+		ReadHeaderTimeout: readHeaderTimeout,
 		Handler:           r,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx

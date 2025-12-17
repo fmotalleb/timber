@@ -1,3 +1,4 @@
+// Package response provides helper functions for writing HTTP responses.
 package response
 
 import (
@@ -5,7 +6,8 @@ import (
 	"net/http"
 )
 
-func Json(w http.ResponseWriter, data any, status int) error {
+// JSON writes a JSON response to the client.
+func JSON(w http.ResponseWriter, data any, status int) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -17,3 +19,4 @@ func Json(w http.ResponseWriter, data any, status int) error {
 	_, err = w.Write(b)
 	return err
 }
+

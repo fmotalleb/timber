@@ -9,6 +9,7 @@ import (
 	"github.com/fmotalleb/go-tools/defaulter"
 )
 
+// Parse reads and merges configuration from the given path and decodes it into the dst struct.
 func Parse(ctx context.Context, dst *Config, path string) error {
 	cfg, err := config.ReadAndMergeConfig(ctx, path)
 	if err != nil {

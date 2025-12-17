@@ -11,6 +11,7 @@ import (
 	"github.com/fmotalleb/timber/server/helper"
 )
 
+// Head returns the first n lines of a file.
 func Head(w http.ResponseWriter, r *http.Request) {
 	logger := log.Of(r.Context())
 	filePath, ok := helper.GetPath(r)
@@ -18,8 +19,12 @@ func Head(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing `path` query parameter", http.StatusBadRequest)
 		return
 	}
+	if containsDotDot(filePath) {
+		http.Error(w, "invalid path", http.StatusBadRequest)
+		return
+	}
 
-	lines := getLinesParam(r, 10)
+	lines := getLinesParam(r, DefaultLineCount)
 
 	f, err := os.Open(filePath)
 	if err != nil {

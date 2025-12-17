@@ -6,12 +6,15 @@ import (
 	"strings"
 )
 
+// User represents a user with their credentials and access rights.
 type User struct {
 	Name       string   `mapstructure:"name"`
 	Password   string   `mapstructure:"password"`
 	AccessList []string `mapstructure:"access"`
 }
 
+// Decode is a custom decoder for the User type to handle string format.
+// The format is <user>:<pass>@<access-1>,<access-2>
 func (u *User) Decode(from reflect.Type, val interface{}) (any, error) {
 	if from.Kind() != reflect.String {
 		return val, nil

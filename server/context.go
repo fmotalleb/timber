@@ -6,6 +6,7 @@ import (
 	"github.com/fmotalleb/timber/config"
 )
 
+// Context is the application context.
 type Context interface {
 	context.Context
 	GetCfg() config.Config
@@ -16,6 +17,7 @@ type contextObj struct {
 	cfg config.Config
 }
 
+// NewContext creates a new application context.
 func NewContext(ctx context.Context, cfg config.Config) Context {
 	return &contextObj{
 		Context: ctx,
