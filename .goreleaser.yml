@@ -6,6 +6,13 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+    ldflags:
+      - "-s"
+      - "-w"
+      - "-X github.com/fmotalleb/go-tools/git.Version={{.Version}}"
+      - "-X github.com/fmotalleb/go-tools/git.Commit={{.ShortCommit}}"
+      - "-X github.com/fmotalleb/go-tools/git.Date={{.Date}}"
+      - "-X github.com/fmotalleb/go-tools/git.Branch={{.Branch}}"
     goos:
       - darwin
       - linux
@@ -33,6 +40,8 @@ dockers:
     - "--label=org.opencontainers.image.source={{.GitURL}}"
 release:
   github:
+    name: timber
+    owner: fmotalleb
   name_template: "{{.Version}}"
   prerelease: auto
   mode: append
