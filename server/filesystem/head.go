@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"bufio"
+	"io"
 	"net/http"
 	"os"
 
@@ -35,14 +36,19 @@ func Head(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-	sc := bufio.NewScanner(f)
-	for i := 0; i < lines && sc.Scan(); i++ {
-		if _, err := w.Write(append(sc.Bytes(), '\n')); err != nil {
-			logger.Error("failed to write response", zap.Error(err))
-		}
-	}
+	reader := bufio.NewReader(f)
 
-	if err := sc.Err(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	for i := 0; i < lines; i++ {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF && len(line) > 0 {
+				w.Write([]byte(line))
+			} else if err != io.EOF {
+				logger.Error("failed to read file", zap.Error(err))
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			break
+		}
+		w.Write([]byte(line))
 	}
 }

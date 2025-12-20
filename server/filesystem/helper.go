@@ -54,72 +54,70 @@ func getFollowParam(r *http.Request) bool {
 }
 
 func tailLines(f *os.File, n int) ([]string, error) {
-	const blockSize = 4096 // Size of each chunk to read (adjust as needed)
+	const blockSize = 4096
 
-	// Get file information (size, etc.)
 	stat, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
 
 	size := stat.Size()
+	if size == 0 || n <= 0 {
+		return nil, nil
+	}
+
 	var (
-		lines    []string // Stores the last n lines
-		offset   = size   // Start from the end of the file
-		buf      = make([]byte, blockSize)
-		lastLine []byte // To store an incomplete line across chunks
+		lines []string
+		buf   = make([]byte, blockSize)
+		rem   []byte
+		pos   = size
 	)
 
-	// Loop to read chunks from the end of the file
-	for offset > 0 && len(lines) <= n+1 {
-		// Determine how much to read in this iteration
-		readSize := blockSize
-		if offset < int64(readSize) {
-			readSize = int(offset)
+	for pos > 0 && len(lines) < n {
+		readSize := int64(blockSize)
+		if pos < readSize {
+			readSize = pos
 		}
+		pos -= readSize
 
-		// Move the offset backwards
-		offset -= int64(readSize)
-
-		// Read the chunk from the file
-		_, err := f.ReadAt(buf[:readSize], offset)
+		_, err := f.ReadAt(buf[:readSize], pos)
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
 
-		// Append the incomplete last line (if any) from the previous chunk
-		if len(lastLine) > 0 {
-			buf = append(lastLine, buf[:readSize]...) // Prepend the last line to the current chunk
-			readSize += len(lastLine)                 // Adjust the read size
-			lastLine = nil                            // Reset for next chunk
+		data := append(buf[:readSize], rem...)
+
+		// scan backwards
+		i := len(data) - 1
+		end := len(data)
+		for i >= 0 {
+			if data[i] == '\n' {
+				if i+1 < end {
+					lines = append(lines, string(data[i+1:end]))
+					if len(lines) == n {
+						return reverse(lines), nil
+					}
+				}
+				end = i
+			}
+			i--
 		}
 
-		// Split the chunk into lines
-		chunkLines := strings.Split(string(buf[:readSize]), "\n")
-
-		// If the last chunk ends with an incomplete line, store it
-		if !strings.HasSuffix(string(buf[:readSize]), "\n") {
-			lastLine = []byte(chunkLines[len(chunkLines)-1])
-			chunkLines = chunkLines[:len(chunkLines)-1] // Remove the incomplete line
-		}
-
-		// Prepend the chunk lines to the lines slice (we do this in reverse order)
-		lines = append(chunkLines, lines...)
-
-		// If we now have more than n lines, trim the excess
-		if len(lines) > n+1 {
-			lines = lines[:n+1]
-		}
+		rem = data[:end]
 	}
 
-	// Handle the case where the file ends without a newline
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1] // Remove the empty last line (if present)
+	if len(rem) > 0 && len(lines) < n {
+		lines = append(lines, string(rem))
 	}
-	if len(lines) > 1 {
-		lines = lines[1:]
+
+	return reverse(lines), nil
+}
+
+func reverse(s []string) []string {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
 	}
-	return lines, nil
+	return s
 }
 
 func followFile(w http.ResponseWriter, r *http.Request, f *os.File) {
