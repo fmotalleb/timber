@@ -1,7 +1,7 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #1a1a1a;
-    color: #eaeaea;
+    background: #1e1e1e; /* VS Code background */
+    color: #d4d4d4; /* VS Code default text */
     padding: 20px;
     margin: 0;
     height: 100vh;
@@ -16,7 +16,8 @@ body {
     max-width: 300px;
     margin: 100px auto;
     padding: 20px;
-    background: #2a2a2a;
+    background: #252526; /* VS Code sidebar */
+    border: 1px solid #3c3c3c;
     border-radius: 8px;
     text-align: center;
 }
@@ -26,9 +27,9 @@ body {
 }
 
 input, button {
-    background: #333;
-    color: #eaeaea;
-    border: 1px solid #555;
+    background: #3c3c3c; /* VS Code input background */
+    color: #d4d4d4;
+    border: 1px solid #3c3c3c;
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 10px;
@@ -37,16 +38,21 @@ input, button {
 button {
     cursor: pointer;
     transition: background 0.2s;
-    width: fit-content; /* Adjusted */
-    white-space: nowrap; /* Added */
+    background: #0e639c; /* VS Code button background */
+    width: fit-content;
+    white-space: nowrap;
 }
 
 button:hover {
-    background: #444;
+    background: #1177bb; /* VS Code button hover */
+}
+
+#login button {
+    width: 100%;
 }
 
 #login-error {
-    color: #ff6b6b;
+    color: #f48771; /* VS Code error red */
     margin-top: 10px;
 }
 
@@ -61,7 +67,7 @@ button:hover {
     align-items: center;
     justify-content: space-between;
     padding-bottom: 10px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #3c3c3c;
 }
 
 .header h3 {
@@ -76,7 +82,7 @@ button:hover {
 
 .file {
     display: flex;
-    flex-wrap: wrap; /* Added to allow buttons to wrap */
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
     padding: 8px;
@@ -85,26 +91,27 @@ button:hover {
 }
 
 .file:hover {
-    background: #2a2a2a;
+    background: #2a2d2e; /* VS Code list hover */
 }
 
 .path {
     flex: 1;
-    white-space: nowrap; /* Adjusted */
-    overflow: hidden; /* Added */
-    text-overflow: ellipsis; /* Added */
-    font-family: monospace;
-    min-width: 150px; /* Added a min-width to prevent it from collapsing too much */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: "Fira Code", "Courier New", Courier, monospace;
+    min-width: 150px;
 }
 
 pre {
-    background: #000;
+    background: #1e1e1e;
     padding: 12px;
-    border: 1px solid #333;
+    border: 1px solid #3c3c3c;
     flex: 1;
     overflow: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
+    font-family: "Fira Code", "Courier New", Courier, monospace;
 }
 
 /* Log levels */
@@ -112,22 +119,22 @@ pre {
     padding: 2px 0;
 }
 .log-line .WARN {
-    color: #ffcc00;
+    color: #ffd700; /* Gold */
     font-weight: bold;
 }
 .log-line .FINE {
-    color: #a2a2a2;
+    color: #808080; /* Grey */
 }
 .log-line .ERROR {
-    color: #ff6b6b;
+    color: #f48771; /* VS Code error red */
     font-weight: bold;
 }
 .log-line .OK {
-    color: #2ecc71;
+    color: #4ec9b0; /* VS Code teal */
     font-weight: bold;
 }
 .log-line .INFO {
-    color: #3498db;
+    color: #569cd6; /* VS Code blue */
 }
 
 /* JSON Viewer Modal */
@@ -145,15 +152,15 @@ pre {
 }
 
 #json-viewer-content {
-    background: #1e1e1e;
+    background: #252526;
     padding: 20px;
     border-radius: 8px;
     width: 90%;
-    /* max-width: 1200px; */
+    max-width: 1200px;
     max-height: 90vh;
     overflow: auto;
     position: relative;
-    border: 1px solid #444;
+    border: 1px solid #3c3c3c;
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
 
@@ -163,7 +170,7 @@ pre {
     right: 15px;
     background: none;
     border: none;
-    color: #aaa;
+    color: #d4d4d4;
     font-size: 24px;
     cursor: pointer;
     line-height: 1;
@@ -171,7 +178,7 @@ pre {
 
 #json-output {
     margin: 0;
-    font-family: monospace;
+    font-family: "Fira Code", "Courier New", Courier, monospace;
 }
 
 .json-table {
@@ -181,21 +188,21 @@ pre {
 }
 
 .json-table th, .json-table td {
-    border: 1px solid #333;
+    border: 1px solid #3c3c3c;
     padding: 10px;
     text-align: left;
     vertical-align: top;
 }
 
 .json-table th {
-    background-color: #2a2a2a;
-    color: #eaeaea;
+    background-color: #0e639c;
+    color: #d4d4d4;
     position: sticky;
     top: -1px; /* Keep headers visible on scroll */
 }
 
 .json-table tbody tr:hover {
-    background-color: #2c2c2c;
+    background-color: #2a2d2e;
 }
 
 .json-table td {
