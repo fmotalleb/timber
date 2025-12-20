@@ -3,6 +3,7 @@ package filesystem
 import (
 	"net/http"
 	"path/filepath"
+	"sort"
 
 	"github.com/fmotalleb/go-tools/log"
 	"go.uber.org/zap"
@@ -19,7 +20,7 @@ func Ls(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger := log.Of(r.Context())
-	files := make([]string, 0)
+	fileSet := make(map[string]struct{})
 	for _, pat := range access {
 		matches, patErr := filepath.Glob(pat)
 		if patErr != nil {
@@ -28,9 +29,19 @@ func Ls(w http.ResponseWriter, r *http.Request) {
 				zap.String("pattern", pat),
 				zap.Error(patErr),
 			)
+			continue
 		}
-		files = append(files, matches...)
+		for _, match := range matches {
+			fileSet[match] = struct{}{}
+		}
 	}
+
+	files := make([]string, 0, len(fileSet))
+	for file := range fileSet {
+		files = append(files, file)
+	}
+	sort.Strings(files)
+
 	if err := response.JSON(w, files, http.StatusOK); err != nil {
 		logger.Error("failed to write response", zap.Error(err))
 	}
