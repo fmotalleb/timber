@@ -43,11 +43,11 @@ function renderOutput(text) {
         const lineEl = document.createElement("div");
         lineEl.className = "log-line";
 
-        const logLevels = ["WARNING", "WARN", "FINE", "ERROR", "OK", "INFO"];
+        const logLevels = ["WARN", "FINE", "ERROR", "OK", "INFO"];
         let hasLevel = false;
         logLevels.forEach(level => {
             if (line.includes(level)) {
-                const regex = new RegExp(`(${level})`, 'g');
+                const regex = new RegExp(`(${level}[^\s\\]\n]*)`, 'g');
                 lineEl.innerHTML = line.replace(regex, `<span class=" ${level}">$1</span>`);
                 hasLevel = true;
             }
@@ -142,6 +142,17 @@ function filterFiles() {
 }
 
 function createNode(node) {
+    // Compact single-child directories like GitHub
+    if (node.type === "dir" && node.children && node.children.length === 1 && node.children[0].type === "dir") {
+        const child = node.children[0];
+        const mergedNode = {
+            ...child,
+            name: node.name + "/" + child.name,
+        };
+        // Continue compacting by recursively calling createNode
+        return createNode(mergedNode);
+    }
+
     const nodeEl = document.createElement("div");
     nodeEl.className = "tree-node";
     nodeEl.dataset.type = node.type;
