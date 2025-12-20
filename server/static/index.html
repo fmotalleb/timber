@@ -48,6 +48,35 @@ pre {
     max-height: 60vh;
     overflow: auto;
 }
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Header row */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Files panel */
+#files {
+    max-height: 40vh;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+/* Optional: keep output scrollable as well */
+#output {
+    flex: 1;
+    overflow-y: auto;
+}
+
 </style>
 </head>
 
@@ -66,8 +95,11 @@ pre {
 </form>
 <!-- APP -->
 <div id="app" class="hidden">
-    <h3>Filesystem ls</h3>
-    <button onclick="logout()">Logout</button>
+    <div class="header">
+        <h3>Log Files</h3>
+        <button onclick="logout()">Logout</button>
+    </div>
+
     <div id="files"></div>
     <pre id="output"></pre>
 </div>

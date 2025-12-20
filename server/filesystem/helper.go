@@ -54,8 +54,9 @@ func getFollowParam(r *http.Request) bool {
 }
 
 func tailLines(f *os.File, n int) ([]string, error) {
-	const blockSize = readChunkSize
+	const blockSize = 4096 // Size of each chunk to read (adjust as needed)
 
+	// Get file information (size, etc.)
 	stat, err := f.Stat()
 	if err != nil {
 		return nil, err
@@ -63,31 +64,61 @@ func tailLines(f *os.File, n int) ([]string, error) {
 
 	size := stat.Size()
 	var (
-		buf    []byte
-		lines  []string
-		offset = size
+		lines    []string // Stores the last n lines
+		offset   = size   // Start from the end of the file
+		buf      = make([]byte, blockSize)
+		lastLine []byte // To store an incomplete line across chunks
 	)
 
-	for offset > 0 && len(lines) <= n {
-		readSize := int64(blockSize)
-		if offset < readSize {
-			readSize = offset
+	// Loop to read chunks from the end of the file
+	for offset > 0 && len(lines) <= n+1 {
+		// Determine how much to read in this iteration
+		readSize := blockSize
+		if offset < int64(readSize) {
+			readSize = int(offset)
 		}
-		offset -= readSize
 
-		tmp := make([]byte, readSize)
-		if _, err := f.ReadAt(tmp, offset); err != nil && !errors.Is(err, io.EOF) {
+		// Move the offset backwards
+		offset -= int64(readSize)
+
+		// Read the chunk from the file
+		_, err := f.ReadAt(buf[:readSize], offset)
+		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
 
-		buf = append(tmp, buf...)
-		lines = strings.Split(string(buf), "\n")
+		// Append the incomplete last line (if any) from the previous chunk
+		if len(lastLine) > 0 {
+			buf = append(lastLine, buf[:readSize]...) // Prepend the last line to the current chunk
+			readSize += len(lastLine)                 // Adjust the read size
+			lastLine = nil                            // Reset for next chunk
+		}
+
+		// Split the chunk into lines
+		chunkLines := strings.Split(string(buf[:readSize]), "\n")
+
+		// If the last chunk ends with an incomplete line, store it
+		if !strings.HasSuffix(string(buf[:readSize]), "\n") {
+			lastLine = []byte(chunkLines[len(chunkLines)-1])
+			chunkLines = chunkLines[:len(chunkLines)-1] // Remove the incomplete line
+		}
+
+		// Prepend the chunk lines to the lines slice (we do this in reverse order)
+		lines = append(chunkLines, lines...)
+
+		// If we now have more than n lines, trim the excess
+		if len(lines) > n+1 {
+			lines = lines[:n+1]
+		}
 	}
 
-	if len(lines) > n {
-		lines = lines[len(lines)-n:]
+	// Handle the case where the file ends without a newline
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1] // Remove the empty last line (if present)
 	}
-
+	if len(lines) > 1 {
+		lines = lines[1:]
+	}
 	return lines, nil
 }
 

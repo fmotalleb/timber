@@ -43,7 +43,7 @@ func Tail(w http.ResponseWriter, r *http.Request) {
 
 	for _, l := range last {
 		if l != "" {
-			if _, err := w.Write([]byte(l)); err != nil {
+			if _, err := w.Write([]byte(l + "\n")); err != nil {
 				log.Of(r.Context()).Error("failed to write response", zap.Error(err))
 			}
 		}
