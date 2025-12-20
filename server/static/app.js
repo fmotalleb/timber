@@ -86,7 +86,6 @@ window.addEventListener("load", async () => {
         }
     }
 });
-
 function createFileRow(path) {
     const row = document.createElement("div");
     row.className = "file";
@@ -156,13 +155,34 @@ function createFileRow(path) {
         }
     };
 
+    const download = document.createElement("button");
+    download.textContent = "download";
+    download.onclick = async () => {
+        stopFollow();
+        try {
+            const res = await authFetch(`./filesystem/download?path=${encodePath(path)}`);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = path.split("/").pop(); // file name
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            output.textContent += "\n[Error: " + e.message + "]";
+        }
+    };
+
     row.append(
         pathEl,
         lines,
         cat,
         head,
         tail,
-        follow
+        follow,
+        download
     );
 
     return row;
