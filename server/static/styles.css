@@ -184,6 +184,14 @@ pre {
 .log-line {
     padding: 2px 0;
 }
+.log-line .WARNING {
+    color: #ffd700; /* Gold */
+    font-weight: bold;
+    background-color: rgba(255, 215, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
 .log-line .WARN {
     color: #ffd700; /* Gold */
     font-weight: bold;

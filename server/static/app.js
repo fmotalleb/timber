@@ -43,7 +43,7 @@ function renderOutput(text) {
         const lineEl = document.createElement("div");
         lineEl.className = "log-line";
 
-        const logLevels = ["WARN", "FINE", "ERROR", "OK", "INFO"];
+        const logLevels = ["WARNING", "WARN", "FINE", "ERROR", "OK", "INFO"];
         let hasLevel = false;
         logLevels.forEach(level => {
             if (line.includes(level)) {
@@ -107,15 +107,37 @@ function logout() {
 
 function filterFiles() {
     const filterText = document.getElementById("file-filter").value.toLowerCase();
-    const nodes = filesContainer.getElementsByClassName("tree-node");
 
-    for (const node of nodes) {
-        const nodeName = node.querySelector(".node-name").textContent.toLowerCase();
-        if (nodeName.includes(filterText)) {
-            node.style.display = "block";
-        } else {
-            node.style.display = "none";
+    function recursiveFilter(node) {
+        const nodeNameEl = node.querySelector(":scope > .node-name");
+        if (!nodeNameEl) return false;
+        
+        const nodeName = nodeNameEl.textContent.toLowerCase();
+        const selfMatches = filterText === '' || nodeName.includes(filterText);
+
+        const childrenContainer = node.querySelector(":scope > .node-children");
+        let hasVisibleChild = false;
+        if (childrenContainer) {
+            for (const childNode of childrenContainer.children) {
+                if (recursiveFilter(childNode)) {
+                    hasVisibleChild = true;
+                }
+            }
         }
+
+        const isVisible = selfMatches || hasVisibleChild;
+        node.style.display = isVisible ? "block" : "none";
+
+        if (hasVisibleChild && !selfMatches && filterText) {
+            childrenContainer.classList.add("open");
+            nodeNameEl.classList.add("open");
+        }
+        
+        return isVisible;
+    }
+
+    for (const node of filesContainer.children) {
+        recursiveFilter(node);
     }
 }
 
