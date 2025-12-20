@@ -131,7 +131,6 @@ function createFileRow(path) {
     lines.min = 1;
     lines.value = 10;
     lines.style.width = "50px";
-    lines.style.width = "50px";
 
     const cat = document.createElement("button");
     cat.textContent = "cat";
@@ -229,10 +228,9 @@ function createFileRow(path) {
         try {
             const res = await authFetch(`./filesystem/cat?path=${encodePath(path)}`);
             const text = await res.text();
-            const json = JSON.parse(text);
-            openJsonViewer(json);
+            openJsonViewer(text);
         } catch (e) {
-            renderOutput("Invalid JSON file.\n\n[Error: " + e.message + "]");
+            renderOutput("Error fetching file for JSON view.\n\n[Error: " + e.message + "]");
         }
     };
 
@@ -259,8 +257,31 @@ async function loadFiles() {
     files.forEach(f => filesContainer.appendChild(createFileRow(f)));
 }
 
-function openJsonViewer(json) {
-    jsonOutput.textContent = JSON.stringify(json, null, 2);
+function openJsonViewer(fileContent) {
+    jsonOutput.innerHTML = ""; // Clear previous JSON output
+    const lines = fileContent.split('\n');
+    let hasJson = false;
+
+    lines.forEach(line => {
+        try {
+            const json = JSON.parse(line);
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(json, null, 2);
+            pre.style.borderBottom = "1px solid #333"; // Separator for multiple JSONs
+            pre.style.paddingBottom = "10px";
+            pre.style.marginBottom = "10px";
+            jsonOutput.appendChild(pre);
+            hasJson = true;
+        } catch (e) {
+            // Not a JSON line, or invalid JSON. Ignore for now or display as plain text
+            // For this specific request, we are only interested in valid JSON lines
+        }
+    });
+
+    if (!hasJson) {
+        jsonOutput.textContent = "No valid JSON objects found per line in this file.";
+    }
+
     jsonViewer.classList.remove("hidden");
 }
 
