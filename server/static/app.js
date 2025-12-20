@@ -1,9 +1,10 @@
-
 let AUTH_HEADER = null;
 let tailInterval = null;
 
 const filesContainer = document.getElementById("files");
 const output = document.getElementById("output");
+const jsonViewer = document.getElementById("json-viewer");
+const jsonOutput = document.getElementById("json-output");
 
 function encodePath(path) {
     return encodeURIComponent(path);
@@ -30,10 +31,39 @@ async function authFetch(url) {
     return res;
 }
 
+function renderOutput(text) {
+    output.innerHTML = ""; // Clear previous output
+    const lines = text.split("\n");
+    lines.forEach(line => {
+        const lineEl = document.createElement("div");
+        lineEl.className = "log-line";
+
+        const logLevels = ["WARN", "FINE", "ERROR", "OK", "INFO"];
+        let hasLevel = false;
+        logLevels.forEach(level => {
+            if (line.includes(level)) {
+                const regex = new RegExp(`(${level})`, 'g');
+                lineEl.innerHTML = line.replace(regex, `<span class=" ${level}">$1</span>`);
+                hasLevel = true;
+            }
+        });
+
+        if (!hasLevel) {
+            lineEl.textContent = line;
+        }
+
+        output.appendChild(lineEl);
+    });
+    output.scrollTop = output.scrollHeight;
+}
+
+
 async function fetchText(url) {
     const res = await authFetch(url);
-    return res.text();
+    const text = await res.text();
+    renderOutput(text);
 }
+
 async function login() {
     const user = document.getElementById("user").value;
     const pass = document.getElementById("pass").value;
@@ -64,7 +94,8 @@ function logout() {
     AUTH_HEADER = null;
     document.getElementById("login").classList.remove("hidden");
     document.getElementById("app").classList.add("hidden");
-    [...filesContainer.children].forEach((a) => filesContainer.removeChild(a));
+    filesContainer.innerHTML = "";
+    output.innerHTML = "";
 }
 
 window.addEventListener("load", async () => {
@@ -86,6 +117,7 @@ window.addEventListener("load", async () => {
         }
     }
 });
+
 function createFileRow(path) {
     const row = document.createElement("div");
     row.className = "file";
@@ -98,43 +130,37 @@ function createFileRow(path) {
     lines.type = "number";
     lines.min = 1;
     lines.value = 10;
+    lines.style.width = "50px";
+    lines.style.width = "50px";
 
     const cat = document.createElement("button");
     cat.textContent = "cat";
     cat.onclick = async () => {
         stopFollow();
-        output.textContent = await fetchText(
-            `./filesystem/cat?path=${encodePath(path)}`
-        );
+        fetchText(`./filesystem/cat?path=${encodePath(path)}`);
     };
 
     const head = document.createElement("button");
     head.textContent = "head";
     head.onclick = async () => {
         stopFollow();
-        output.textContent = await fetchText(
-            `./filesystem/head?path=${encodePath(path)}&lines=${lines.value}`
-        );
+        fetchText(`./filesystem/head?path=${encodePath(path)}&lines=${lines.value}`);
     };
 
     const tail = document.createElement("button");
     tail.textContent = "tail";
     tail.onclick = async () => {
         stopFollow();
-        output.textContent = await fetchText(
-            `./filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=false`
-        );
+        fetchText(`./filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=false`);
     };
 
     const follow = document.createElement("button");
     follow.textContent = "follow";
     follow.onclick = async () => {
         stopFollow();
-        output.textContent = "";
+        output.innerHTML = "";
 
-        const url =
-            `./filesystem/tail?path=${encodePath(path)}` +
-            `&lines=${lines.value}&follow=true`;
+        const url = `./filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=true`;
 
         try {
             const res = await authFetch(url);
@@ -144,14 +170,35 @@ function createFileRow(path) {
             async function readChunk() {
                 const { done, value } = await reader.read();
                 if (done) return;
-                output.textContent += decoder.decode(value, { stream: true });
+                const chunk = decoder.decode(value, { stream: true });
+                
+                const lines = chunk.split("\n");
+                lines.forEach(line => {
+                    if (line.trim() === "") return;
+                    const lineEl = document.createElement("div");
+                    lineEl.className = "log-line";
+                    const logLevels = ["WARN", "FINE", "ERROR", "OK", "INFO"];
+                    let hasLevel = false;
+                    logLevels.forEach(level => {
+                        if (line.includes(level)) {
+                            const regex = new RegExp(`(${level})`, 'g');
+                            lineEl.innerHTML = line.replace(regex, `<span class=" ${level}">$1</span>`);
+                            hasLevel = true;
+                        }
+                    });
+                    if (!hasLevel) {
+                        lineEl.textContent = line;
+                    }
+                    output.appendChild(lineEl);
+                });
+                
                 output.scrollTop = output.scrollHeight;
                 readChunk();
             }
 
             readChunk();
         } catch (e) {
-            output.textContent += "\n[Error: " + e.message + "]";
+            renderOutput("\n[Error: " + e.message + "]");
         }
     };
 
@@ -171,9 +218,24 @@ function createFileRow(path) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch (e) {
-            output.textContent += "\n[Error: " + e.message + "]";
+            renderOutput("\n[Error: " + e.message + "]");
         }
     };
+
+    const viewJson = document.createElement("button");
+    viewJson.textContent = "View as JSON";
+    viewJson.onclick = async () => {
+        stopFollow();
+        try {
+            const res = await authFetch(`./filesystem/cat?path=${encodePath(path)}`);
+            const text = await res.text();
+            const json = JSON.parse(text);
+            openJsonViewer(json);
+        } catch (e) {
+            renderOutput("Invalid JSON file.\n\n[Error: " + e.message + "]");
+        }
+    };
+
 
     row.append(
         pathEl,
@@ -182,7 +244,8 @@ function createFileRow(path) {
         head,
         tail,
         follow,
-        download
+        download,
+        viewJson
     );
 
     return row;
@@ -194,4 +257,13 @@ async function loadFiles() {
 
     filesContainer.innerHTML = "";
     files.forEach(f => filesContainer.appendChild(createFileRow(f)));
+}
+
+function openJsonViewer(json) {
+    jsonOutput.textContent = JSON.stringify(json, null, 2);
+    jsonViewer.classList.remove("hidden");
+}
+
+function closeJsonViewer() {
+    jsonViewer.classList.add("hidden");
 }

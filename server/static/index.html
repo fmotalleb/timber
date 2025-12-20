@@ -7,12 +7,12 @@
    </head>
    <body>
       <!-- LOGIN -->
-      <form action="./" onsubmit="login()">
+      <form action="./" onsubmit="event.preventDefault(); login();">
          <div id="login">
             <h3>Authenticate</h3>
             <input id="user" placeholder="username" />
             <input id="pass" type="password" placeholder="password" />
-            <button onclick="login()">Login</button>
+            <button type="submit">Login</button>
             <div id="login-error"></div>
          </div>
       </form>
@@ -25,6 +25,15 @@
          <div id="files"></div>
          <pre id="output"></pre>
       </div>
+
+      <!-- JSON Viewer Modal -->
+      <div id="json-viewer" class="hidden">
+          <div id="json-viewer-content">
+              <button id="json-viewer-close" onclick="closeJsonViewer()">&times;</button>
+              <pre id="json-output"></pre>
+          </div>
+      </div>
+
       <script src="./app.js"></script>
    </body>
 </html>
