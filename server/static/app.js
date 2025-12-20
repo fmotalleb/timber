@@ -36,28 +36,31 @@ async function authFetch(url) {
 
 // --- Content Rendering ---
 
+function createLogLineElement(line) {
+    const lineEl = document.createElement("div");
+    lineEl.className = "log-line";
+
+    const logLevels = ["WARNING", "WARN", "FINE", "ERROR", "OK", "INFO"];
+    let hasLevel = false;
+    logLevels.forEach(level => {
+        if (line.includes(level) && !hasLevel) {
+            const regex = new RegExp(`(${level})`, 'g');
+            lineEl.innerHTML = line.replace(regex, `<span class=" ${level}">$1</span>`);
+            hasLevel = true;
+        }
+    });
+
+    if (!hasLevel) {
+        lineEl.textContent = line;
+    }
+    return lineEl;
+}
+
 function renderOutput(text) {
     output.innerHTML = ""; // Clear previous output
     const lines = text.split("\n");
     lines.forEach(line => {
-        const lineEl = document.createElement("div");
-        lineEl.className = "log-line";
-
-        const logLevels = ["WARN", "FINE", "ERROR", "OK", "INFO"];
-        let hasLevel = false;
-        logLevels.forEach(level => {
-            if (line.includes(level)) {
-                const regex = new RegExp(`(${level}[^\s\\]\n]*)`, 'g');
-                lineEl.innerHTML = line.replace(regex, `<span class=" ${level}">$1</span>`);
-                hasLevel = true;
-            }
-        });
-
-        if (!hasLevel) {
-            lineEl.textContent = line;
-        }
-
-        output.appendChild(lineEl);
+        output.appendChild(createLogLineElement(line));
     });
     output.scrollTop = output.scrollHeight;
 }
@@ -228,10 +231,7 @@ function createNode(node) {
                         
                         lines.forEach(line => {
                             if (line.trim() === "") return;
-                            const lineEl = document.createElement("div");
-                            lineEl.className = "log-line";
-                            lineEl.textContent = line; // Simplified rendering for streaming
-                            output.appendChild(lineEl);
+                            output.appendChild(createLogLineElement(line));
                         });
                         
                         output.scrollTop = output.scrollHeight;
