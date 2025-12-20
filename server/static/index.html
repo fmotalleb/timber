@@ -206,7 +206,6 @@ function createFileRow(path) {
     lines.min = 1;
     lines.value = 10;
 
-
     const cat = document.createElement("button");
     cat.textContent = "cat";
     cat.onclick = async () => {
@@ -224,43 +223,54 @@ function createFileRow(path) {
             `/filesystem/head?path=${encodePath(path)}&lines=${lines.value}`
         );
     };
-    const follow = document.createElement("input");
-    follow.type = "checkbox";
-    follow.title = "Follow the output when using tail"
+
     const tail = document.createElement("button");
     tail.textContent = "tail";
     tail.onclick = async () => {
-    stopFollow();
-    output.textContent = "";
+        stopFollow();
+        output.textContent = await fetchText(
+            `/filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=false`
+        );
+    };
 
-    const url = `/filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=${follow.checked}`;
+    const follow = document.createElement("button");
+    follow.textContent = "follow";
+    follow.onclick = async () => {
+        stopFollow();
+        output.textContent = "";
 
-    if (!follow.checked) {
-        // normal tail, not streaming
-        output.textContent = await fetchText(url);
-        return;
-    }
+        const url =
+            `/filesystem/tail?path=${encodePath(path)}` +
+            `&lines=${lines.value}&follow=true`;
 
-    try {
-        const res = await authFetch(url); // includes Basic Auth
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
+        try {
+            const res = await authFetch(url);
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
 
-        async function readChunk() {
-            const { done, value } = await reader.read();
-            if (done) return;  // stream closed
-            output.textContent += decoder.decode(value, { stream: true });
-            output.scrollTop = output.scrollHeight; // auto-scroll
-            readChunk(); // continue reading
+            async function readChunk() {
+                const { done, value } = await reader.read();
+                if (done) return;
+                output.textContent += decoder.decode(value, { stream: true });
+                output.scrollTop = output.scrollHeight;
+                readChunk();
+            }
+
+            readChunk();
+        } catch (e) {
+            output.textContent += "\n[Error: " + e.message + "]";
         }
+    };
 
-        readChunk();
-    } catch (e) {
-        output.textContent += "\n[Error: " + e.message + "]";
-    }
-};
+    row.append(
+        pathEl,
+        lines,
+        cat,
+        head,
+        tail,
+        follow
+    );
 
-    row.append(pathEl, lines,  cat, head, tail,follow,);
     return row;
 }
 
@@ -268,8 +278,10 @@ async function loadFiles() {
     const res = await authFetch("/filesystem/ls");
     const files = await res.json();
 
+    filesContainer.innerHTML = "";
     files.forEach(f => filesContainer.appendChild(createFileRow(f)));
 }
+
 </script>
 
 </body>
