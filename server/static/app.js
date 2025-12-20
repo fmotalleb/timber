@@ -116,6 +116,13 @@ window.addEventListener("load", async () => {
             AUTH_HEADER = null;
         }
     }
+    
+    // Close modal on outside click
+    jsonViewer.addEventListener("click", (e) => {
+        if (e.target === jsonViewer) {
+            closeJsonViewer();
+        }
+    });
 });
 
 function createFileRow(path) {
@@ -259,29 +266,58 @@ async function loadFiles() {
 
 function openJsonViewer(fileContent) {
     jsonOutput.innerHTML = ""; // Clear previous JSON output
-    const lines = fileContent.split('\n');
-    let hasJson = false;
+    const lines = fileContent.split('\n').filter(line => line.trim() !== "");
+    const jsonObjects = [];
 
     lines.forEach(line => {
         try {
-            const json = JSON.parse(line);
-            const pre = document.createElement('pre');
-            pre.textContent = JSON.stringify(json, null, 2);
-            pre.style.borderBottom = "1px solid #333"; // Separator for multiple JSONs
-            pre.style.paddingBottom = "10px";
-            pre.style.marginBottom = "10px";
-            jsonOutput.appendChild(pre);
-            hasJson = true;
+            jsonObjects.push(JSON.parse(line));
         } catch (e) {
-            // Not a JSON line, or invalid JSON. Ignore for now or display as plain text
-            // For this specific request, we are only interested in valid JSON lines
+            // Not a valid JSON line, just ignore it.
         }
     });
 
-    if (!hasJson) {
+    if (jsonObjects.length === 0) {
         jsonOutput.textContent = "No valid JSON objects found per line in this file.";
+        jsonViewer.classList.remove("hidden");
+        return;
     }
 
+    // Create a table
+    const table = document.createElement('table');
+    table.className = 'json-table';
+
+    // Create table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    const headers = [...new Set(jsonObjects.flatMap(obj => Object.keys(obj)))];
+    headers.forEach(headerText => {
+        const th = document.createElement('th');
+        th.textContent = headerText;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create table body
+    const tbody = document.createElement('tbody');
+    jsonObjects.forEach(obj => {
+        const row = document.createElement('tr');
+        headers.forEach(header => {
+            const cell = document.createElement('td');
+            const value = obj[header];
+            if (typeof value === 'object' && value !== null) {
+                cell.textContent = JSON.stringify(value, null, 2);
+            } else {
+                cell.textContent = value;
+            }
+            row.appendChild(cell);
+        });
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    jsonOutput.appendChild(table);
     jsonViewer.classList.remove("hidden");
 }
 
