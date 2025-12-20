@@ -296,3 +296,8 @@ pre {
 .json-table td:first-child {
     color: #ce9178; /* Different color for first column */
 }
+
+.app-fullscreen-logs #file-filter,
+.app-fullscreen-logs #files {
+    display: none;
+}

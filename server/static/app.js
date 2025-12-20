@@ -350,6 +350,18 @@ function closeJsonViewer() {
     jsonViewer.classList.add("hidden");
 }
 
+function toggleFullscreen() {
+    const appContainer = document.getElementById("app");
+    appContainer.classList.toggle("app-fullscreen-logs");
+
+    const fullscreenBtn = document.getElementById("fullscreen-btn");
+    if (appContainer.classList.contains("app-fullscreen-logs")) {
+        fullscreenBtn.textContent = "Exit Fullscreen";
+    } else {
+        fullscreenBtn.textContent = "Fullscreen";
+    }
+}
+
 // --- In-File Search ---
 
 let searchMatches = [];
@@ -443,6 +455,7 @@ window.addEventListener("load", async () => {
     });
     document.getElementById("search-next").addEventListener("click", () => navigateSearch(1));
     document.getElementById("search-prev").addEventListener("click", () => navigateSearch(-1));
+    document.getElementById("fullscreen-btn").addEventListener("click", toggleFullscreen);
 
     // Attempt auto-login
     const user = localStorage.getItem("auth_user");
