@@ -7,7 +7,7 @@
    </head>
    <body>
       <!-- LOGIN -->
-      <form action="./" onsubmit="event.preventDefault(); login();">
+      <form action="./">
          <div id="login">
             <h3>Authenticate</h3>
             <input id="user" placeholder="username" />
@@ -22,7 +22,13 @@
             <h3>Log Files</h3>
             <button onclick="logout()">Logout</button>
          </div>
+         <input type="text" id="file-filter" placeholder="Filter files..." style="width: 100%; box-sizing: border-box;">
          <div id="files"></div>
+         <div id="search-container" style="display: flex; gap: 8px; margin: 10px 0;">
+            <input type="text" id="content-search" placeholder="Search in file..." style="flex: 1;">
+            <button id="search-prev">&lt; Prev</button>
+            <button id="search-next">Next &gt;</button>
+         </div>
          <pre id="output"></pre>
       </div>
 
