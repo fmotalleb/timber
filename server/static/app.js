@@ -160,7 +160,7 @@ function createFileRow(path) {
     download.onclick = async () => {
         stopFollow();
         try {
-            const res = await authFetch(`./filesystem/download?path=${encodePath(path)}`);
+            const res = await authFetch(`./filesystem/cat?path=${encodePath(path)}`);
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
