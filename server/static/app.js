@@ -40,11 +40,11 @@ function createLogLineElement(line) {
     const lineEl = document.createElement("div");
     lineEl.className = "log-line";
 
-    const logLevels = ["WARNING", "WARN", "FINE", "ERROR", "OK", "INFO"];
+    const logLevels = ["WARN", "FINE", "ERROR", "OK", "INFO"];
     let hasLevel = false;
     logLevels.forEach(level => {
         if (line.includes(level) && !hasLevel) {
-            const regex = new RegExp(`(${level})`, 'g');
+            const regex = new RegExp(`(${level}[^\s\n\\]"]*)`, 'g');
             lineEl.innerHTML = line.replace(regex, `<span class=" ${level}">$1</span>`);
             hasLevel = true;
         }
