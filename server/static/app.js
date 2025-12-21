@@ -9,6 +9,16 @@ const jsonOutput = document.getElementById("json-output");
 
 // --- Core API & Utility Functions ---
 
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === undefined || bytes === null || isNaN(bytes)) return '';
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
 function encodePath(path) {
     return encodeURIComponent(path);
 }
@@ -112,7 +122,7 @@ function filterFiles() {
     const filterText = document.getElementById("file-filter").value.toLowerCase();
 
     function recursiveFilter(node) {
-        const nodeNameEl = node.querySelector(":scope > .node-name");
+        const nodeNameEl = node.querySelector(":scope > .node-info > .node-name, :scope > .node-name");
         if (!nodeNameEl) return false;
         
         const nodeName = nodeNameEl.textContent.toLowerCase();
@@ -133,7 +143,10 @@ function filterFiles() {
 
         if (hasVisibleChild && !selfMatches && filterText) {
             childrenContainer.classList.add("open");
-            nodeNameEl.classList.add("open");
+            const clickable = node.querySelector(":scope > .node-info > .node-name, :scope > .node-name");
+            if (clickable) {
+               clickable.classList.add("open");
+            }
         }
         
         return isVisible;
@@ -151,6 +164,7 @@ function createNode(node) {
         const mergedNode = {
             ...child,
             name: node.name + "/" + child.name,
+            size: node.size,
         };
         // Continue compacting by recursively calling createNode
         return createNode(mergedNode);
@@ -164,16 +178,25 @@ function createNode(node) {
     nodeName.className = "node-name";
     nodeName.textContent = node.name;
 
+    const nodeSize = document.createElement("div");
+    nodeSize.className = "node-size";
+    nodeSize.textContent = formatBytes(node.size);
+
     if (node.type === "dir") {
+        const nodeInfo = document.createElement("div");
+        nodeInfo.className = "node-info";
+        nodeInfo.appendChild(nodeName);
+        nodeInfo.appendChild(nodeSize);
+
         const childrenEl = document.createElement("div");
         childrenEl.className = "node-children";
         if (node.children) {
             node.children.forEach(child => childrenEl.appendChild(createNode(child)));
         }
-        nodeEl.appendChild(nodeName);
+        nodeEl.appendChild(nodeInfo);
         nodeEl.appendChild(childrenEl);
 
-        nodeName.addEventListener("click", (e) => {
+        nodeInfo.addEventListener("click", (e) => {
             // Stop propagation to prevent file controls from triggering this
             e.stopPropagation();
             childrenEl.classList.toggle("open");
@@ -281,7 +304,12 @@ function createNode(node) {
         };
 
         controls.append(lines, cat, head, tail, follow, download, viewJson);
-        nodeEl.appendChild(controls);
+        
+        const rightSide = document.createElement('div');
+        rightSide.className = 'file-right-side';
+        rightSide.appendChild(nodeSize);
+        rightSide.appendChild(controls);
+        nodeEl.appendChild(rightSide);
     }
     return nodeEl;
 }

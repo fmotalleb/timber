@@ -110,6 +110,31 @@ button:hover {
     cursor: default; /* File names are not collapsible */
 }
 
+/* New styles for size display */
+.node-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.node-info:hover {
+    background: #2a2d2e;
+}
+
+.node-size {
+    padding: 0 10px;
+    font-family: "Fira Code", "Courier New", Courier, monospace;
+    color: #8c8c8c; /* Dim color for size */
+    white-space: nowrap;
+}
+
+.file-right-side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* Style for the new container holding buttons and input */
 .file-controls {
     flex-shrink: 0; /* Prevent controls from shrinking */
@@ -130,11 +155,10 @@ button:hover {
     cursor: pointer;
     display: flex;
     align-items: center;
-    padding: 4px 0;
 }
 
-.node-name:hover {
-    background: #2a2d2e;
+.node-info {
+    padding: 4px 0;
 }
 
 .node-children {

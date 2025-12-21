@@ -19,9 +19,23 @@ type Node struct {
 	Path     string  `json:"path,omitempty"`
 	Type     string  `json:"type"`
 	Children []*Node `json:"children,omitempty"`
+	Size     int64   `json:"size"`
 }
 
-func (n *Node) findOrCreateChild(name string, nodeType string) *Node {
+func (n *Node) getSize() int64 {
+	if n.Type == "file" {
+		return n.Size
+	}
+	if n.Size != 0 {
+		return n.Size
+	}
+	for _, c := range n.Children {
+		n.Size += c.getSize()
+	}
+	return n.Size
+}
+
+func (n *Node) findOrCreateChild(name string, nodeType string, size int64) *Node {
 	for _, child := range n.Children {
 		if child.Name == name {
 			// A node can't be both a file and a directory.
@@ -34,6 +48,7 @@ func (n *Node) findOrCreateChild(name string, nodeType string) *Node {
 	newNode := &Node{
 		Name: name,
 		Type: nodeType,
+		Size: size,
 	}
 	n.Children = append(n.Children, newNode)
 	sort.Slice(n.Children, func(i, j int) bool {
@@ -48,16 +63,22 @@ func (n *Node) findOrCreateChild(name string, nodeType string) *Node {
 func insertPath(root *Node, path string, isDir bool) {
 	parts := strings.Split(path, string(os.PathSeparator))
 	currentNode := root
+	size := int64(0)
+	if stat, err := os.Stat(path); err == nil {
+		size = stat.Size()
+	}
 	for i, part := range parts {
 		if part == "" {
 			continue
 		}
 		nodeType := "dir"
 		// The last part of the path determines the type
+		fSize := int64(0)
 		if i == len(parts)-1 && !isDir {
 			nodeType = "file"
+			fSize = size
 		}
-		currentNode = currentNode.findOrCreateChild(part, nodeType)
+		currentNode = currentNode.findOrCreateChild(part, nodeType, fSize)
 		// Set the full path only for the final node in the path
 		if i == len(parts)-1 {
 			currentNode.Path = path
@@ -104,7 +125,7 @@ func Ls(w http.ResponseWriter, r *http.Request) {
 			processed[cleanedPath] = true
 		}
 	}
-
+	root.getSize()
 	if err := response.JSON(w, root.Children, http.StatusOK); err != nil {
 		logger.Error("failed to write response", zap.Error(err))
 	}
