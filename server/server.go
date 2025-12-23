@@ -81,5 +81,16 @@ func Serve(ctx Context) error {
 			return ctx
 		},
 	}
-	return server.ListenAndServe()
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- server.ListenAndServe()
+	}()
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		server.Shutdown(ctx)
+		return nil
+	}
 }

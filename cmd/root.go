@@ -3,11 +3,13 @@ package cmd
 import (
 	"context"
 	"os"
+	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/fmotalleb/go-tools/git"
 	"github.com/fmotalleb/go-tools/log"
-	"github.com/fmotalleb/go-tools/sysctx"
+	"github.com/fmotalleb/go-tools/reloader"
 	"github.com/spf13/cobra"
 
 	"github.com/fmotalleb/timber/config"
@@ -36,22 +38,33 @@ to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		var configFile string
 		var err error
-		var cfg config.Config
-		ctx := context.Background()
-		ctx = sysctx.CancelWith(ctx, syscall.SIGTERM)
+
+		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
+		defer cancel()
 		ctx, err = log.WithNewEnvLogger(ctx)
 		if err != nil {
 			return err
 		}
-
 		if configFile, err = cmd.Flags().GetString("config"); err != nil {
 			return err
 		}
-		if err = config.Parse(ctx, &cfg, configFile); err != nil {
-			return err
-		}
-		sCtx := server.NewContext(ctx, cfg)
-		return server.Serve(sCtx)
+		reload := make(chan os.Signal, 10)
+		signal.Notify(reload, syscall.SIGHUP, os.Interrupt)
+		defer signal.Stop(reload)
+		err = reloader.WithReload(
+			ctx,
+			reload,
+			func(ctx context.Context) error {
+				var cfg config.Config
+				if err = config.Parse(ctx, &cfg, configFile); err != nil {
+					return err
+				}
+				sCtx := server.NewContext(ctx, cfg)
+				return server.Serve(sCtx)
+			},
+			time.Second*30,
+		)
+		return err
 	},
 }
 
