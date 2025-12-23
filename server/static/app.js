@@ -9,6 +9,11 @@ const jsonOutput = document.getElementById("json-output");
 
 // --- Core API & Utility Functions ---
 
+function showLoader() {
+    document.querySelector('.loader').style.display = 'block';
+    output.innerHTML = '';
+}
+
 function formatBytes(bytes, decimals = 2) {
     if (bytes === undefined || bytes === null || isNaN(bytes)) return '';
     if (bytes === 0) return '0 Bytes';
@@ -19,6 +24,7 @@ function formatBytes(bytes, decimals = 2) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
+
 function encodePath(path) {
     return encodeURIComponent(path);
 }
@@ -28,6 +34,10 @@ function stopFollow() {
         clearInterval(tailInterval);
         tailInterval = null;
     }
+}
+
+function hideLoader() {
+    document.querySelector('.loader').style.display = 'none';
 }
 
 async function authFetch(url) {
@@ -67,19 +77,57 @@ function createLogLineElement(line) {
 }
 
 function renderOutput(text) {
-    output.innerHTML = ""; // Clear previous output
-    const lines = text.split("\n");
-    lines.forEach(line => {
-        output.appendChild(createLogLineElement(line));
+    // if (text.length >= 1000000) { // 1MB limit
+    //     output.innerHTML = "Output too large to display.";
+    //     return Promise.resolve();
+    // }
+    return new Promise(resolve => {
+        output.innerHTML = ""; // Clear previous output
+        
+        let currentIndex = 0;
+        const chunkSize = 1000; // 1000 lines per chunk
+
+        function renderChunk() {
+            const fragment = document.createDocumentFragment();
+            let linesInChunk = 0;
+            
+            while (linesInChunk < chunkSize && currentIndex < text.length) {
+                const nextNewline = text.indexOf('\n', currentIndex);
+                const endOfLine = nextNewline === -1 ? text.length : nextNewline;
+                const line = text.substring(currentIndex, endOfLine);
+                
+                fragment.appendChild(createLogLineElement(line));
+                
+                currentIndex = endOfLine + 1;
+                linesInChunk++;
+            }
+            
+            output.appendChild(fragment);
+
+            if (currentIndex < text.length) {
+                requestAnimationFrame(renderChunk);
+            } else {
+                output.scrollTop = output.scrollHeight;
+                resolve();
+            }
+        }
+
+        renderChunk();
     });
-    output.scrollTop = output.scrollHeight;
 }
 
 async function fetchText(url) {
-    const res = await authFetch(url);
-    const text = await res.text();
-    // Use the wrapped renderOutput to ensure search state is cleared
-    wrappedRenderOutput(text);
+    showLoader();
+    try {
+        const res = await authFetch(url);
+        const text = await res.text();
+        // Use the wrapped renderOutput to ensure search state is cleared
+        await wrappedRenderOutput(text);
+    } catch (e) {
+        await wrappedRenderOutput(`\n[Error: ${e.message}]`);
+    } finally {
+        hideLoader();
+    }
 }
 
 // --- Authentication ---
@@ -89,6 +137,7 @@ async function login() {
     const pass = document.getElementById("pass").value;
 
     AUTH_HEADER = "Basic " + btoa(user + ":" + pass);
+
 
     try {
         await authFetch("./filesystem/ls");
@@ -232,76 +281,148 @@ function createNode(node) {
         tail.textContent = "tail";
         tail.onclick = () => { stopFollow(); fetchText(`./filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=false`); };
         
-        const follow = document.createElement("button");
-        follow.textContent = "follow";
-        follow.onclick = async () => {
-            stopFollow();
-            wrappedRenderOutput(""); // Clear output
-            const url = `./filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=true`;
-            
-            try {
-                const res = await authFetch(url);
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder();
-    
-                async function readChunk() {
-                    try {
-                        const { done, value } = await reader.read();
-                        if (done) return;
-                        
-                        const chunk = decoder.decode(value, { stream: true });
-                        const lines = chunk.split("\n");
-                        
-                        lines.forEach(line => {
-                            if (line.trim() === "") return;
-                            output.appendChild(createLogLineElement(line));
-                        });
-                        
-                        output.scrollTop = output.scrollHeight;
-                        readChunk();
-                    } catch (e) {
-                        // Handle stream reading errors
-                        console.error("Stream reading error:", e);
-                    }
-                }
-                readChunk();
-            } catch (e) {
-                wrappedRenderOutput(`\n[Error: ${e.message}]`);
-            }
-        };
-
-        const download = document.createElement("button");
-        download.textContent = "download";
-        download.onclick = async () => {
-            stopFollow();
-            try {
-                const res = await authFetch(`./filesystem/cat?path=${encodePath(path)}`);
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = path.split("/").pop();
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            } catch (e) {
-                wrappedRenderOutput(`\n[Error: ${e.message}]`);
-            }
-        };
+                                const follow = document.createElement("button");
+                                follow.textContent = "follow";
+                                follow.onclick = async () => {
+                                    stopFollow();
+                                    showLoader();
+                                    await wrappedRenderOutput(""); // Clear output
+                                    const url = `./filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=true`;
+                                    
+                                    try {
+                                        const res = await authFetch(url);
+                                        const reader = res.body.getReader();
+                                        const decoder = new TextDecoder();
+                            
+                                        async function readChunk() {
+                                            try {
+                                                const { done, value } = await reader.read();
+                                                if (done) {
+                                                    hideLoader();
+                                                    return;
+                                                }
+                                                hideLoader(); // Hide loader after first chunk
+                                                
+                                                const chunk = decoder.decode(value, { stream: true });
+                                                const lines = chunk.split("\n");
+                                                
+                                                lines.forEach(line => {
+                                                    if (line.trim() === "") return;
+                                                    output.appendChild(createLogLineElement(line));
+                                                });
+                                                
+                                                output.scrollTop = output.scrollHeight;
+                                                readChunk();
+                                            } catch (e) {
+                                                // Handle stream reading errors
+                                                console.error("Stream reading error:", e);
+                                                hideLoader();
+                                            }
+                                        }
+                                        readChunk();
+                                    } catch (e) {
+                                        await wrappedRenderOutput(`\n[Error: ${e.message}]`);
+                                        hideLoader();
+                                    }
+                                };                        const download = document.createElement("button");
         
-        const viewJson = document.createElement("button");
-        viewJson.textContent = "View as JSON";
-        viewJson.onclick = async () => {
-            stopFollow();
-            try {
-                const res = await authFetch(`./filesystem/cat?path=${encodePath(path)}`);
-                const text = await res.text();
-                openJsonViewer(text);
-            } catch (e) {
-                wrappedRenderOutput(`Error fetching file for JSON view.\n\n[Error: ${e.message}]`);
-            }
-        };
+                        download.textContent = "download";
+        
+                        download.onclick = async () => {
+        
+                            stopFollow();
+        
+                            showLoader();
+        
+                            try {
+        
+                                const res = await authFetch(`./filesystem/cat?path=${encodePath(path)}`);
+        
+                                const blob = await res.blob();
+        
+                                const url = URL.createObjectURL(blob);
+        
+                                const a = document.createElement("a");
+        
+                                a.href = url;
+        
+                                a.download = path.split("/").pop();
+        
+                                document.body.appendChild(a);
+        
+                                a.click();
+        
+                                document.body.removeChild(a);
+        
+                                URL.revokeObjectURL(url);
+        
+                            } catch (e) {
+        
+                                await wrappedRenderOutput(`\n[Error: ${e.message}]`);
+        
+                            } finally {
+        
+                                hideLoader();
+        
+                            }
+        
+                        };
+        
+                        
+        
+                                        const viewJson = document.createElement("button");
+        
+                        
+        
+                                        viewJson.textContent = "View as JSON";
+        
+                        
+        
+                                        viewJson.onclick = async () => {
+        
+                        
+        
+                                            stopFollow();
+        
+                        
+        
+                                            showLoader();
+        
+                        
+        
+                                            try {
+        
+                        
+        
+                                                const res = await authFetch(`./filesystem/cat?path=${encodePath(path)}`);
+        
+                        
+        
+                                                const text = await res.text();
+        
+                        
+        
+                                                openJsonViewer(text);
+        
+                        
+        
+                                                        } catch (e) {
+        
+                        
+        
+                                                            output.innerHTML = `Error fetching file for JSON view.\n\n[Error: ${e.message}]`;
+        
+                        
+        
+                                                            hideLoader();
+        
+                        
+        
+                                                        }
+        
+                        
+        
+                                                    };
 
         controls.append(lines, cat, head, tail, follow, download, viewJson);
         
@@ -340,6 +461,7 @@ function openJsonViewer(fileContent) {
     if (jsonObjects.length === 0) {
         jsonOutput.textContent = "No valid JSON objects found per line in this file.";
         jsonViewer.classList.remove("hidden");
+        hideLoader();
         return;
     }
 
@@ -372,6 +494,7 @@ function openJsonViewer(fileContent) {
 
     jsonOutput.appendChild(table);
     jsonViewer.classList.remove("hidden");
+    hideLoader();
 }
 
 function closeJsonViewer() {
@@ -453,13 +576,13 @@ function escapeRegExp(string) {
 }
 
 // Wrap renderOutput to reset search state whenever new content is loaded
-const wrappedRenderOutput = (text) => {
+const wrappedRenderOutput = async (text) => {
     document.getElementById("content-search").value = "";
     searchMatches = [];
     currentSearchIndex = -1;
     isSearching = false;
     originalOutputHTML = "";
-    renderOutput(text);
+    await renderOutput(text);
 };
 
 
