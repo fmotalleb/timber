@@ -76,18 +76,20 @@ function createLogLineElement(line) {
     return lineEl;
 }
 
-function renderOutput(text) {
-    // if (text.length >= 1000000) { // 1MB limit
-    //     output.innerHTML = "Output too large to display.";
-    //     return Promise.resolve();
-    // }
-    return new Promise(resolve => {
+let renderCancellation = null;
+
+function renderOutput(text, token) {
+    return new Promise((resolve, reject) => {
         output.innerHTML = ""; // Clear previous output
         
         let currentIndex = 0;
         const chunkSize = 1000; // 1000 lines per chunk
 
         function renderChunk() {
+            if (token.cancelled) {
+                return reject(new Error("Render cancelled"));
+            }
+
             const fragment = document.createDocumentFragment();
             let linesInChunk = 0;
             
@@ -124,7 +126,9 @@ async function fetchText(url) {
         // Use the wrapped renderOutput to ensure search state is cleared
         await wrappedRenderOutput(text);
     } catch (e) {
-        await wrappedRenderOutput(`\n[Error: ${e.message}]`);
+        if (e.message !== "Render cancelled") {
+            await wrappedRenderOutput(`\n[Error: ${e.message}]`);
+        }
     } finally {
         hideLoader();
     }
@@ -290,41 +294,41 @@ function createNode(node) {
                                     const url = `./filesystem/tail?path=${encodePath(path)}&lines=${lines.value}&follow=true`;
                                     
                                     try {
-                                        const res = await authFetch(url);
-                                        const reader = res.body.getReader();
-                                        const decoder = new TextDecoder();
-                            
-                                        async function readChunk() {
-                                            try {
-                                                const { done, value } = await reader.read();
-                                                if (done) {
-                                                    hideLoader();
-                                                    return;
-                                                }
-                                                hideLoader(); // Hide loader after first chunk
-                                                
-                                                const chunk = decoder.decode(value, { stream: true });
-                                                const lines = chunk.split("\n");
-                                                
-                                                lines.forEach(line => {
-                                                    if (line.trim() === "") return;
-                                                    output.appendChild(createLogLineElement(line));
-                                                });
-                                                
-                                                output.scrollTop = output.scrollHeight;
-                                                readChunk();
-                                            } catch (e) {
-                                                // Handle stream reading errors
-                                                console.error("Stream reading error:", e);
-                                                hideLoader();
-                                            }
+                                const res = await authFetch(url);
+                                const reader = res.body.getReader();
+                                const decoder = new TextDecoder();
+                    
+                                async function readChunk() {
+                                    try {
+                                        const { done, value } = await reader.read();
+                                        if (done) {
+                                            hideLoader();
+                                            return;
                                         }
+                                        hideLoader(); // Hide loader after first chunk
+                                        
+                                        const chunk = decoder.decode(value, { stream: true });
+                                        const lines = chunk.split("\n");
+                                        
+                                        lines.forEach(line => {
+                                            if (line.trim() === "") return;
+                                            output.appendChild(createLogLineElement(line));
+                                        });
+                                        
+                                        output.scrollTop = output.scrollHeight;
                                         readChunk();
                                     } catch (e) {
-                                        await wrappedRenderOutput(`\n[Error: ${e.message}]`);
+                                        // Handle stream reading errors
+                                        console.error("Stream reading error:", e);
                                         hideLoader();
                                     }
-                                };                        const download = document.createElement("button");
+                                }
+                                readChunk();
+                            } catch (e) {
+                                await wrappedRenderOutput(`\n[Error: ${e.message}]`);
+                                hideLoader();
+                            }
+                        };                        const download = document.createElement("button");
         
                         download.textContent = "download";
         
@@ -577,12 +581,28 @@ function escapeRegExp(string) {
 
 // Wrap renderOutput to reset search state whenever new content is loaded
 const wrappedRenderOutput = async (text) => {
+    // Cancel any ongoing render
+    if (renderCancellation) {
+        renderCancellation.cancelled = true;
+    }
+
+    // Create a new cancellation token
+    const token = { cancelled: false };
+    renderCancellation = token;
+
     document.getElementById("content-search").value = "";
     searchMatches = [];
     currentSearchIndex = -1;
     isSearching = false;
     originalOutputHTML = "";
-    await renderOutput(text);
+    
+    try {
+        await renderOutput(text, token);
+    } catch (e) {
+        if (e.message !== "Render cancelled") {
+            console.error(e);
+        }
+    }
 };
 
 
