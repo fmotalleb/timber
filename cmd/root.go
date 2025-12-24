@@ -18,6 +18,11 @@ import (
 
 var debug = false
 
+const (
+	signalBufferSize = 5
+	reloadTimeout    = time.Second * 30
+)
+
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "timber",
@@ -48,7 +53,7 @@ to quickly create a Cobra application.`,
 		if configFile, err = cmd.Flags().GetString("config"); err != nil {
 			return err
 		}
-		reload := make(chan os.Signal, 10)
+		reload := make(chan os.Signal, signalBufferSize)
 		signal.Notify(reload, syscall.SIGHUP, os.Interrupt)
 		defer signal.Stop(reload)
 		err = reloader.WithReload(
@@ -62,7 +67,7 @@ to quickly create a Cobra application.`,
 				sCtx := server.NewContext(ctx, cfg)
 				return server.Serve(sCtx)
 			},
-			time.Second*30,
+			reloadTimeout,
 		)
 		return err
 	},

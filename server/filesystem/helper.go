@@ -84,8 +84,8 @@ func tailLines(f *os.File, n int) ([]string, error) {
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
-
-		data := append(buf[:readSize], rem...)
+		data := buf[:readSize]
+		data = append(data, rem...)
 
 		// scan backwards
 		i := len(data) - 1

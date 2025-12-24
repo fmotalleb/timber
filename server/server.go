@@ -90,7 +90,6 @@ func Serve(ctx Context) error {
 	case err := <-errCh:
 		return err
 	case <-ctx.Done():
-		server.Shutdown(ctx)
-		return nil
+		return server.Shutdown(ctx)
 	}
 }
