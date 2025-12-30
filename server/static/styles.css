@@ -218,7 +218,7 @@ pre {
 .log-line .FINE {
     color: #808080; /* Grey */
 }
-.log-line .ERROR {
+.log-line .ERR {
     color: #f48771; /* VS Code error red */
     font-weight: bold;
     background-color: rgba(244, 135, 113, 0.1);

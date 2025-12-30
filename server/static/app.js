@@ -55,24 +55,35 @@ async function authFetch(url) {
 }
 
 // --- Content Rendering ---
+const escapeHtml = unsafe => {
+  return unsafe
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+};
+const logLevels = ["INFO", "WARN", "ERR"];
+const logLevelTerminator = '[^\\]\\s\\n:"(),]*';
+
+const logLevelRegex = new Map(
+    logLevels.map(level => [
+        level,
+        new RegExp(`(${level}${logLevelTerminator})`, 'gi')
+    ])
+);
 
 function createLogLineElement(line) {
     const lineEl = document.createElement("div");
     lineEl.className = "log-line";
+    // Escape HTML special characters
+    let html = escapeHtml(line);
 
-    const logLevels = ["WARN", "FINE", "ERROR", "OK", "INFO"];
-    let hasLevel = false;
-    logLevels.forEach(level => {
-        if (line.includes(level) && !hasLevel) {
-            const regex = new RegExp(`(${level}[^\\s\\n\\]"]*)`, 'g');
-            lineEl.innerHTML = line.replace(regex, `<span class=" ${level}">$1</span>`);
-            hasLevel = true;
-        }
-    });
-
-    if (!hasLevel) {
-        lineEl.textContent = line;
+    for (const [level, regex] of logLevelRegex) {
+        html = html.replace(regex, `<span class="${level}">$1</span>`);
     }
+
+    lineEl.innerHTML = html;
     return lineEl;
 }
 
