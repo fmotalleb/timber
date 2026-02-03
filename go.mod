@@ -10,7 +10,7 @@ tool (
 )
 
 require (
-	github.com/fmotalleb/go-tools v0.1.63
+	github.com/fmotalleb/go-tools v0.1.71
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/spf13/cobra v1.10.2
 	go.uber.org/zap v1.27.1
